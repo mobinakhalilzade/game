@@ -7,7 +7,7 @@ type Game struct {
 	CategoryID  uint
 	QuestionIDs []uint
 	PlayerIDs   []uint
-	StartTime time.Time
+	StartTime   time.Time
 }
 
 type Player struct {

@@ -3,7 +3,7 @@ package entity
 type Question struct {
 	ID              uint
 	Text            string
-	PossibleAnswer  []PossibleAnswer
+	PossibleAnswers []PossibleAnswer
 	CorrectAnswerID uint
 	Difficulty      QuestionDifficulty
 	CategoryID      uint
@@ -18,7 +18,7 @@ type PossibleAnswer struct {
 type PossibleAnswerChoice uint8
 
 func (p PossibleAnswerChoice) IsValid() bool {
-	if p >= possibleAnswerA && p <= possibleAnswerD {
+	if p >= PossibleAnswerA && p <= PossibleAnswerD {
 		return true
 	}
 
@@ -26,10 +26,10 @@ func (p PossibleAnswerChoice) IsValid() bool {
 }
 
 const (
-	possibleAnswerA PossibleAnswerChoice = iota + 1
-	possibleAnswerB
-	possibleAnswerC
-	possibleAnswerD
+	PossibleAnswerA PossibleAnswerChoice = iota + 1
+	PossibleAnswerB
+	PossibleAnswerC
+	PossibleAnswerD
 )
 
 type QuestionDifficulty uint8

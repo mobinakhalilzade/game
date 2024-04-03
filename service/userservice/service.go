@@ -2,13 +2,13 @@ package userservice
 
 import (
 	"fmt"
-	"go-cast/game/entity"
-	"go-cast/game/pkg/phonenumber"
+	"gameapp/entity"
+	"gameapp/pkg/phonenumber"
 )
 
 type Repository interface {
 	IsPhoneNumberUnique(phoneNumber string) (bool, error)
-	Register(user entity.User) (entity.User, error)
+	Register(u entity.User) (entity.User, error)
 }
 
 type Service struct {
@@ -17,25 +17,29 @@ type Service struct {
 
 type RegisterRequest struct {
 	Name        string
-	phoneNumber string
+	PhoneNumber string
 }
 
 type RegisterResponse struct {
 	User entity.User
 }
 
-func (s Service) register(request RegisterRequest) (RegisterResponse, error) {
+func New(repo Repository) Service {
+	return Service{repo: repo}
+}
+
+func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	// TODO - we should verify phone number by verification code
 
-	//validate phone number
-	if !phonenumber.IsValid(request.phoneNumber) {
+	// validate phone number
+	if !phonenumber.IsValid(req.PhoneNumber) {
 		return RegisterResponse{}, fmt.Errorf("phone number is not valid")
 	}
 
-	//check uniqueness of the phone number
-	if isUnique, err := s.repo.IsPhoneNumberUnique(request.phoneNumber); err != nil || !isUnique {
+	// check uniqueness of phone number
+	if isUnique, err := s.repo.IsPhoneNumberUnique(req.PhoneNumber); err != nil || !isUnique {
 		if err != nil {
-			return RegisterResponse{}, fmt.Errorf("unexpected error:%w", err)
+			return RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
 		}
 
 		if !isUnique {
@@ -43,22 +47,25 @@ func (s Service) register(request RegisterRequest) (RegisterResponse, error) {
 		}
 	}
 
-	//validate name
-	if len(request.Name) < 3 {
+	// validate name
+	if len(req.Name) < 3 {
 		return RegisterResponse{}, fmt.Errorf("name length should be greater than 3")
 	}
 
-	//save in database
 	user := entity.User{
 		ID:          0,
-		Name:        request.Name,
-		PhoneNumber: request.phoneNumber,
-	}
-	createdUser, err := s.repo.Register(user)
-	if err != nil {
-		return RegisterResponse{}, fmt.Errorf("unexpected error:%w", err)
+		PhoneNumber: req.PhoneNumber,
+		Name:        req.Name,
 	}
 
-	//return created user
-	return RegisterResponse{User: createdUser}, nil
+	// create new user in storage
+	createdUser, err := s.repo.Register(user)
+	if err != nil {
+		return RegisterResponse{}, fmt.Errorf("unexpected error: %w", err)
+	}
+
+	// return created user
+	return RegisterResponse{
+		User: createdUser,
+	}, nil
 }
