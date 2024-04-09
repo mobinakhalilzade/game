@@ -31,8 +31,14 @@ type RegisterRequest struct {
 	Password    string `json:"password"`
 }
 
+type RegisterResponseUser struct {
+	ID          uint   `json:"id"`
+	PhoneNumber string `json:"phone_number"`
+	Name        string `json:"name"`
+}
+
 type RegisterResponse struct {
-	User entity.User
+	User RegisterResponseUser `json:"user"`
 }
 
 func New(repo Repository, auth AuthGenerator) Service {
@@ -85,8 +91,13 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 
 	// return created user
 	return RegisterResponse{
-		User: createdUser,
+		RegisterResponseUser{
+			ID:          createdUser.ID,
+			PhoneNumber: createdUser.PhoneNumber,
+			Name:        createdUser.Name,
+		},
 	}, nil
+
 }
 
 func getMD5Hash(text string) string {
