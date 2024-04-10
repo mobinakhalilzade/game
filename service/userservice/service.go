@@ -31,14 +31,37 @@ type RegisterRequest struct {
 	Password    string `json:"password"`
 }
 
-type RegisterResponseUser struct {
+type UserInfo struct {
 	ID          uint   `json:"id"`
 	PhoneNumber string `json:"phone_number"`
 	Name        string `json:"name"`
 }
 
 type RegisterResponse struct {
-	User RegisterResponseUser `json:"user"`
+	User UserInfo `json:"user"`
+}
+
+type LoginRequest struct {
+	PhoneNumber string `json:"phone_number"`
+	Password    string `json:"password"`
+}
+
+type Tokens struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh-token"`
+}
+
+type LoginResponse struct {
+	User   UserInfo `json:"user"`
+	Tokens Tokens   `json:"tokens"`
+}
+
+type ProfileRequest struct {
+	UserID uint
+}
+
+type ProfileResponse struct {
+	Name string `json:"name"`
 }
 
 func New(repo Repository, auth AuthGenerator) Service {
@@ -91,28 +114,12 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 
 	// return created user
 	return RegisterResponse{
-		RegisterResponseUser{
+		UserInfo{
 			ID:          createdUser.ID,
 			PhoneNumber: createdUser.PhoneNumber,
 			Name:        createdUser.Name,
 		},
 	}, nil
-
-}
-
-func getMD5Hash(text string) string {
-	hash := md5.Sum([]byte(text))
-	return hex.EncodeToString(hash[:])
-}
-
-type LoginRequest struct {
-	PhoneNumber string `json:"phone_number"`
-	Password    string `json:"password"`
-}
-
-type LoginResponse struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh-token"`
 }
 
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
@@ -140,18 +147,18 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
 	}
 
-	return LoginResponse{AccessToken: accessToken, RefreshToken: refreshToken}, nil
+	return LoginResponse{
+		User: UserInfo{
+			ID:          user.ID,
+			PhoneNumber: user.PhoneNumber,
+			Name:        user.Name,
+		},
+		Tokens: Tokens{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		},
+	}, nil
 }
-
-type ProfileRequest struct {
-	UserID uint
-}
-
-type ProfileResponse struct {
-	Name string `json:"name"`
-}
-
-// all request inputs for interactor/service should be sanitized.
 
 func (s Service) Profile(req ProfileRequest) (ProfileResponse, error) {
 	// getUserByID
@@ -164,4 +171,9 @@ func (s Service) Profile(req ProfileRequest) (ProfileResponse, error) {
 	}
 
 	return ProfileResponse{Name: user.Name}, nil
+}
+
+func getMD5Hash(text string) string {
+	hash := md5.Sum([]byte(text))
+	return hex.EncodeToString(hash[:])
 }

@@ -32,9 +32,12 @@ func (s Server) Serve() {
 
 	// Routes
 	e.GET("/health-check", s.healthCheck)
-	e.POST("/users/register", s.userRegister)
-	e.POST("/users/login", s.userLogin)
-	e.GET("/users/profile", s.userProfile)
+
+	userGroup := e.Group("/users")
+
+	userGroup.POST("/register", s.userRegister)
+	userGroup.POST("/login", s.userLogin)
+	userGroup.GET("/profile", s.userProfile)
 	// Start server
 	e.Logger.Fatal(e.Start(fmt.Sprintf(":%d", s.config.HTTPServer.Port)))
 }
