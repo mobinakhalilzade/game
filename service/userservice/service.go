@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gameapp/entity"
 	"gameapp/pkg/phonenumber"
+	"gameapp/pkg/richerror"
 )
 
 type Repository interface {
@@ -39,29 +40,6 @@ type UserInfo struct {
 
 type RegisterResponse struct {
 	User UserInfo `json:"user"`
-}
-
-type LoginRequest struct {
-	PhoneNumber string `json:"phone_number"`
-	Password    string `json:"password"`
-}
-
-type Tokens struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh-token"`
-}
-
-type LoginResponse struct {
-	User   UserInfo `json:"user"`
-	Tokens Tokens   `json:"tokens"`
-}
-
-type ProfileRequest struct {
-	UserID uint
-}
-
-type ProfileResponse struct {
-	Name string `json:"name"`
 }
 
 func New(repo Repository, auth AuthGenerator) Service {
@@ -122,11 +100,28 @@ func (s Service) Register(req RegisterRequest) (RegisterResponse, error) {
 	}, nil
 }
 
+type LoginRequest struct {
+	PhoneNumber string `json:"phone_number"`
+	Password    string `json:"password"`
+}
+
+type Tokens struct {
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh-token"`
+}
+
+type LoginResponse struct {
+	User   UserInfo `json:"user"`
+	Tokens Tokens   `json:"tokens"`
+}
+
 func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 	// TODO - it would be better to user two separate method for existence check and getUserByPhoneNumber
+	const op = "userservice.Login"
 	user, exist, err := s.repo.GetUserByPhoneNumber(req.PhoneNumber)
 	if err != nil {
-		return LoginResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return LoginResponse{}, richerror.New(op).WithErr(err).
+			WithMeta(map[string]interface{}{"phone_number": req.PhoneNumber})
 	}
 
 	if !exist {
@@ -160,14 +155,20 @@ func (s Service) Login(req LoginRequest) (LoginResponse, error) {
 	}, nil
 }
 
+type ProfileRequest struct {
+	UserID uint
+}
+
+type ProfileResponse struct {
+	Name string `json:"name"`
+}
+
 func (s Service) Profile(req ProfileRequest) (ProfileResponse, error) {
-	// getUserByID
+	const op = "userservice.Profile"
 	user, err := s.repo.GetUserByID(req.UserID)
 	if err != nil {
-		// I don't expect the repository call return "record not found" error,
-		// because I assume the interactor input is sanitized.
-		// TODO - we can use Rich Error.
-		return ProfileResponse{}, fmt.Errorf("unexpected error: %w", err)
+		return ProfileResponse{}, richerror.New(op).WithErr(err).
+			WithMeta(map[string]interface{}{"req": req})
 	}
 
 	return ProfileResponse{Name: user.Name}, nil
